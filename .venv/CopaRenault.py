@@ -1,11 +1,16 @@
-from flask import Flask, render_template, request,jsonify
+from flask import Flask, render_template, request,jsonify,flash,redirect,url_for
 from flask_sqlalchemy  import SQLAlchemy
 from sqlalchemy import inspect
 from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+
 app = Flask(__name__)
 CORS(app)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login"
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost/RenaultCup'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False
@@ -36,6 +41,80 @@ with app.app_context():
     inspector = inspect(db.engine)
     tables = inspector.get_table_names()
     print(tables)
+
+class User(db.Model, UserMixin):
+    __tablename__ = 'users'
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(120), nullable=False)
+
+    def get_id(self):
+        return str(self.id)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    @staticmethod
+    def get(user_id):
+        return User.query.get(int(user_id))
+
+    @staticmethod
+    def validate(username, password):
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            return user
+        return None
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+
+        if User.query.filter_by(username=username).first():
+            flash("El usuario ya existe.")
+            return redirect(url_for("signup"))
+
+        new_user = User(username=username)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+
+        flash("Usuario creado correctamente. Ahora podés iniciar sesión.")
+        return redirect(url_for("login"))
+
+    return render_template("signup.html")
+@login_manager.user_loader
+def load_user(user_id):
+    return User.get(user_id)
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        user = User.validate(username, password)
+        if user:
+            login_user(user)
+            flash("Logged in successfully!")
+            return redirect(url_for("dashboard"))
+        else:
+            flash("Invalid credentials")
+    return render_template("login.html")
+
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    return f"Hello, {current_user.username}!"
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for("login"))
 
 @app.route("/")
 def Index():

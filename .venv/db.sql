@@ -102,6 +102,7 @@ CREATE TABLE `Cuenta_habilitada` (
   `Nombre` VARCHAR(40) NULL DEFAULT NULL,
   `Email` VARCHAR(40) NULL DEFAULT NULL,
   `Contraseña` VARCHAR(20) NULL DEFAULT NULL,
+  `rango`  VARCHAR(20) NULL DEFAULT NULL,
   PRIMARY KEY (`id_cuenta`)
 );
 
