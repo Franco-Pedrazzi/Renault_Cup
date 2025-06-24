@@ -36,27 +36,25 @@ class Equipo(db.Model):
     Sexo= db.Column(db.String(10))
     Categoria=db.Column(db.String(10))
 
+class User(UserMixin,db.Model):
+    __tablename__ = 'Cuenta_habilitada' 
+    id_cuenta= db.Column(db.Integer, primary_key=True)
+    Nombre= db.Column(db.String(40))
+    Contraseña= db.Column(db.String(20))
+    Email= db.Column(db.String(40))
+    Rango= db.Column(db.String(20))
 
-with app.app_context():
-    inspector = inspect(db.engine)
-    tables = inspector.get_table_names()
-    print(tables)
-
-class User(db.Model, UserMixin):
-    __tablename__ = 'users'
-
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(120), nullable=False)
-
-    def get_id(self):
-        return str(self.id)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+with app.app_context():
+    inspector = inspect(db.engine)
+    tables = inspector.get_table_names()
+    print(tables)
 
     @staticmethod
     def get(user_id):
@@ -68,28 +66,50 @@ class User(db.Model, UserMixin):
         if user and user.check_password(password):
             return user
         return None
-@app.route("/signup", methods=["GET", "POST"])
-def signup():
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
+@app.route("/signup", methods=["POST"])
+def Signup():
+    try:
+        data = request.get_json()
 
-        if User.query.filter_by(username=username).first():
-            flash("El usuario ya existe.")
-            return redirect(url_for("signup"))
+        Nombre = data.get('Nombre')
+        Email = data.get('Email')
+        Contraseña = data.get('Contraseña')
+        Rango = "C"  
 
-        new_user = User(username=username)
-        new_user.set_password(password)
+        if not (Nombre and Email and Contraseña):
+            return jsonify({'success': False, 'error': 'Faltan campos requeridos'}), 400
+
+        if User.query.filter_by(Nombre=Nombre).first():
+            return jsonify({'success': False, 'error': 'El nombre de usuario ya existe'}), 409
+        if User.query.filter_by(Email=Email).first():
+            return jsonify({'success': False, 'error': 'El email ya está en uso'}), 409
+
+        new_user = User(Nombre=Nombre, Email=Email, Rango=Rango)
+        new_user.set_password(Contraseña)
+
         db.session.add(new_user)
         db.session.commit()
 
-        flash("Usuario creado correctamente. Ahora podés iniciar sesión.")
-        return redirect(url_for("login"))
+        return jsonify({
+            'success': True,
+            'Jugador': {
+                'Nombre': new_user.Nombre,
+                'email': new_user.Email
+            }
+        })
 
-    return render_template("signup.html")
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route("/Count")
+def signup():
+    return render_template('signup.html')
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.get(user_id)
+    
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():

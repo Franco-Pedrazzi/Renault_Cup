@@ -1,28 +1,47 @@
-
-
 {% extends "./base.html" %}
 
 {% block body %}
-<body>
-  <h2>Registro de Cuenta</h2>
-  <form method="POST">
-    <label>Nombre:</label><br>
-    <input type="text" name="nombre" required><br>
-    <label>Email:</label><br>
-    <input type="email" name="email" required><br>
-    <label>Contraseña:</label><br>
-    <input type="password" name="password" required><br><br>
-    <input type="submit" value="Registrarse">
-  </form>
+<div>
+   <p>Nombre:<input id="Nombre" type="text"></p>
+   <p>Email:<input id="Email" type="text"></p>
+   <p>Contraseña:<input id="Contraseña" type="password"></p>
 
-  {% with messages = get_flashed_messages() %}
-    {% if messages %}
-      <ul>
-        {% for message in messages %}
-          <li>{{ message }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
-  {% endwith %}
-</body>
+   <button onclick="addDriver()">Signup</button>
+</div>
+
+<ul id="Count-list"></ul> 
+
+<script>
+    function addDriver() {
+        const Nombre = document.getElementById('Nombre').value;
+        const Email = document.getElementById('Email').value;
+        const Contraseña = document.getElementById('Contraseña').value;
+        const rango="C"
+        fetch('/signup', { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                Nombre: Nombre,
+                Email: Email,
+                Contraseña: Contraseña
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const li = document.createElement('li');
+                li.textContent = `${data.Jugador.Nombre} (${data.Jugador.email})`;
+                document.getElementById('Count-list').appendChild(li);
+            } else {
+                alert("Error: " + data.error);
+            }
+        })
+        .catch(err => {
+            console.error("Server error:", err);
+            alert("Something went wrong.");
+        });
+    }
+</script>
 {% endblock %}
