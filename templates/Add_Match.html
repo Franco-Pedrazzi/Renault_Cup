@@ -1,0 +1,97 @@
+{% extends "./base.html" %}
+
+{% block body %}
+<div>
+    <p>Deporte</p>
+        <select id="Deporte">
+            <option value="Fut">Futbol</option>
+            <option value="Bas">Basquet</option>
+            <option value="Vol">Voley</option>
+        </select>
+
+    <p>Sexo de los Equipos </p>
+        <select id="Sexo">
+            <option value=""></option>
+            <option value="Mas">Masculino</option>
+            <option value="Fem">Femenino</option>
+        </select>
+
+    <p>Categoria</p>
+        <select id="Categoria">
+            <option value=""></option>
+            <option value="May">Mayor</option>
+            <option value="Int">Intermedio</option>
+            <option value="Men">Menor</option>
+        </select>
+    
+    <p>ID del Arbitro:<input id="Arbitro" type="number"></p>
+    <p>ID del Planillero:<input id="Planillero" type="number"></p>
+    <p>ID del Equipo 1:<input id="Equipo_1" type="number"></p>
+    <p>ID del Equipo 2:<input id="Equipo_2" type="number"></p>
+
+    <p>Fase</p>
+        <select id="Fase">
+            <option value=""></option>
+            <option value="Eliminatoria">Eliminatoria</option>
+            <option value="Octavos">Octavos de final</option>
+            <option value="Cuartos">Cuartos de final</option>
+            <option value="Semifinal">Semifinal</option>
+            <option value="Final">Final</option>
+        </select>
+
+    <p>Hora de inicio:<input id="Horario_inicio" type="time"></p>
+    <p>Hora de fin:<input id="Horario_final" type="time"></p>
+   
+   <button onclick="addDriver()">Añadir</button>
+</div>
+
+<ul id="Partido-list"></ul> <!-- list to display new Jugadores -->
+
+<script>
+    function addDriver() {
+        const Deporte = document.getElementById('Deporte').value;
+        const Sexo = document.getElementById('Sexo').value;
+        const Categoria = document.getElementById('Categoria').value;
+        const id_arbitro = document.getElementById('Arbitro').value;
+        const id_planillero = document.getElementById('Planillero').value;
+        const id_equipo_1 = document.getElementById('Equipo_1').value;
+        const id_equipo_2 = document.getElementById('Equipo_2').value;
+        const Fase = document.getElementById('Fase').value;
+        const Horario_inicio = document.getElementById('Horario_inicio').value;
+        const Horario_final = document.getElementById('Horario_final').value;
+
+        fetch('/api/Players', {  // make sure this matches your Flask route
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                Deporte: Deporte,
+                Sexo: Sexo,
+                Categoria: Categoria,
+                id_arbitro: id_arbitro,
+                id_planillero: id_planillero,
+                id_equipo_1: id_equipo_1,
+                id_equipo_2: id_equipo_2,
+                Fase: Fase,
+                Horario_inicio: Horario_inicio,
+                Horario_final: Horario_final
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const li = document.createElement('li');
+                li.textContent = `${data.Jugador.Nombre} (${data.Jugador.email})`;
+                document.getElementById('Jugador-list').appendChild(li);
+            } else {
+                alert("Error: " + data.error);
+            }
+        })
+        .catch(err => {
+            console.error("Server error:", err);
+            alert("Something went wrong.");
+        });
+    }
+</script>
+{% endblock %}
