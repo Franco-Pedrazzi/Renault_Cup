@@ -30,7 +30,7 @@
    <button onclick="addDriver()">Añadir</button>
 </div>
 
-<ul id="Jugador-list"></ul> <!-- list to display new Jugadores -->
+<ul id="Jugador-list"></ul> 
 
 <script>
     function addDriver() {
@@ -39,7 +39,7 @@
         const Categoria = document.getElementById('Categoria').value;
         const Deporte = document.getElementById('Deporte').value;
 
-        fetch('/api/Equipo', {  // make sure this matches your Flask route
+        fetch('/api/Equipo', {  
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -56,7 +56,8 @@
         .then(data => {
             if (data.success) {
                 const li = document.createElement('li');
-                li.textContent = `${data.Jugador.name} (${data.Jugador.email})`;
+                li.textContent = `${data.Equipo.Colegio} - ${data.Equipo.Deporte} (${data.Equipo.Sexo} - ${data.Equipo.Categoria})`;
+
                 document.getElementById('Jugador-list').appendChild(li);
             } else {
                 alert("Error: " + data.error);

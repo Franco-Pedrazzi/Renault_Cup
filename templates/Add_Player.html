@@ -19,7 +19,7 @@
    <button onclick="addDriver()">Añadir</button>
 </div>
 
-<ul id="Jugador-list"></ul> <!-- list to display new Jugadores -->
+<ul id="Jugador-list"></ul>
 
 <script>
     function addDriver() {
@@ -40,7 +40,7 @@
             Comida_especial="N"
         }
         console.log(Comida_especial)
-        fetch('/api/Players', {  // make sure this matches your Flask route
+        fetch('/api/Players', {  
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
