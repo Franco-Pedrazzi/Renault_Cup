@@ -45,8 +45,6 @@
    <button onclick="addDriver()">Añadir</button>
 </div>
 
-<ul id="Partido-list"></ul> 
-
 <script>
     function addDriver() {
         const Deporte = document.getElementById('Deporte').value;
@@ -60,7 +58,7 @@
         const Horario_inicio = document.getElementById('Horario_inicio').value;
         const Horario_final = document.getElementById('Horario_final').value;
 
-        fetch('/api/Matches', {  // make sure this matches your Flask route
+        fetch('/api/Matches', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -80,11 +78,7 @@
         })
         .then(res => res.json())
         .then(data => {
-            if (data.success) {
-                const li = document.createElement('li');
-                li.textContent = `${data.Jugador.Nombre} (${data.Jugador.email})`;
-                document.getElementById('Jugador-list').appendChild(li);
-            } else {
+            if (!data.success) {
                 alert("Error: " + data.error);
             }
         })

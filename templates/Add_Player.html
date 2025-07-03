@@ -19,27 +19,26 @@
    <button onclick="addDriver()">Añadir</button>
 </div>
 
-<ul id="Jugador-list"></ul>
-
 <script>
     function addDriver() {
-        const Nombre = document.getElementById('Nombre').value+" "+document.getElementById('LastNombre').value;
+        const Nombre = document.getElementById('Nombre').value + " " + document.getElementById('LastNombre').value;
         const Fecha_nacimiento = document.getElementById('Fecha_nacimiento').value;
         const DNI = document.getElementById('DNI').value;
         const id_equipo = document.getElementById('id_equipo').value;
         const Telefono = document.getElementById('Telefono').value;
         const Email = document.getElementById('Email').value;
-        var Comida_especial="";
-        if (document.getElementById('C').checked){
-            Comida_especial+="C"
+
+        let Comida_especial = "";
+        if (document.getElementById('C').checked) {
+            Comida_especial += "C";
         }
-        if (document.getElementById('V').checked){
-            Comida_especial+="V"
+        if (document.getElementById('V').checked) {
+            Comida_especial += "V";
         }
-        if (Comida_especial==""){
-            Comida_especial="N"
+        if (Comida_especial === "") {
+            Comida_especial = "N";
         }
-        console.log(Comida_especial)
+
         fetch('/api/Players', {  
             method: 'POST',
             headers: {
@@ -57,11 +56,7 @@
         })
         .then(res => res.json())
         .then(data => {
-            if (data.success) {
-                const li = document.createElement('li');
-                li.textContent = `${data.Jugador.Nombre} (${data.Jugador.email})`;
-                document.getElementById('Jugador-list').appendChild(li);
-            } else {
+            if (!data.success) {
                 alert("Error: " + data.error);
             }
         })

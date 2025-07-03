@@ -30,8 +30,6 @@
    <button onclick="addDriver()">Añadir</button>
 </div>
 
-<ul id="Jugador-list"></ul> 
-
 <script>
     function addDriver() {
         const Colegio = document.getElementById('Colegio').value;
@@ -54,12 +52,7 @@
         })
         .then(res => res.json())
         .then(data => {
-            if (data.success) {
-                const li = document.createElement('li');
-                li.textContent = `${data.Equipo.Colegio} - ${data.Equipo.Deporte} (${data.Equipo.Sexo} - ${data.Equipo.Categoria})`;
-
-                document.getElementById('Jugador-list').appendChild(li);
-            } else {
+            if (!data.success) {
                 alert("Error: " + data.error);
             }
         })

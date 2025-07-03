@@ -12,7 +12,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:password1234@localhost/RenaultCup'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost/renaultcup'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False
 
 db=SQLAlchemy(app)
@@ -58,6 +58,15 @@ class User(UserMixin,db.Model):
     Email= db.Column(db.String(40))
     Rango= db.Column(db.String(20))
 
+class Staff(db.Model):
+    __tablename__ = 'Staff'
+    id_staff = db.Column(db.Integer, primary_key=True)
+    Nombre = db.Column(db.String(40))
+    DNI = db.Column(db.Integer)
+    Telefono = db.Column(db.Integer)
+    Email = db.Column(db.String(40))  
+    Trabajo = db.Column(db.String(15))
+    Sector = db.Column(db.String(20))
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -165,6 +174,52 @@ def hell():
 @app.route("/Add Match")
 def Create_Match():
     return render_template('Add_Match.html')
+
+@app.route("/Add Staff")
+def Create_Staff():
+    return render_template('Add_Staff.html')
+
+@app.route('/api/Staff', methods=['POST'])
+def add_Staff():
+    try:
+        data = request.get_json()
+        Nombre = data.get('Nombre')
+        DNI = data.get('DNI')
+        Telefono = data.get('Telefono')
+        Email = data.get('Email')
+        Trabajo = data.get('Trabajo')
+        Sector = data.get('Sector')
+
+        if not (Nombre and DNI and Telefono and Email and Trabajo and Sector):
+            return jsonify({'success': False, 'error': 'Faltan campos requeridos'}), 400
+
+        new_staff = Staff(
+            Nombre=Nombre,
+            DNI=DNI,
+            Telefono=Telefono,
+            Email=Email,
+            Trabajo=Trabajo,
+            Sector=Sector
+        )
+
+        db.session.add(new_staff)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'Staff': {
+                'id_staff': new_staff.id_staff,
+                'Nombre': new_staff.Nombre,
+                'DNI': new_staff.DNI,
+                'Telefono': new_staff.Telefono,
+                'Email': new_staff.Email,
+                'Trabajo': new_staff.Trabajo,
+                'Sector': new_staff.Sector
+            }
+        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/Equipo', methods=['POST'])
 def add_Equipo():

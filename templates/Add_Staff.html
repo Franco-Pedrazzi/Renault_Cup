@@ -1,0 +1,67 @@
+{% extends "./base.html" %}
+
+{% block body %}
+<div>
+   <p>Nombre: <input id="Nombre" type="text"></p>
+   <p>DNI: <input id="DNI" type="number"></p>
+   <p>Teléfono: <input id="Telefono" type="number"></p>
+   <p>Email: <input id="Email" type="text"></p>
+
+   <p>Trabajo:</p>
+   <select id="Sector">
+        <option value=""></option>
+        <option value="Pla">Planillero</option>
+        <option value="Arb">Arbitro</option>
+        <option value="Ven">Vendedor</option>
+   </select>
+
+   <p>Sector:</p>
+   <select id="Sector">
+        <option value=""></option>
+        <option value="Pla">Cantina</option>
+        <option value="Arb">Voley</option>
+        <option value="Fut">Futbol</option>
+        <option value="Bas">Basquet</option>
+
+   </select>
+
+   <br><br>
+   <button onclick="addStaff()">Añadir Staff</button>
+</div>
+
+<script>
+    function addStaff() {
+        const Nombre = document.getElementById('Nombre').value;
+        const DNI = parseInt(document.getElementById('DNI').value);
+        const Telefono = parseInt(document.getElementById('Telefono').value);
+        const Email = document.getElementById('Email').value;
+        const Trabajo = document.getElementById('Trabajo').value;
+        const Sector = document.getElementById('Sector').value;
+
+        fetch('/api/Staff', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                Nombre: Nombre,
+                DNI: DNI,
+                Telefono: Telefono,
+                Email: Email,
+                Trabajo: Trabajo,
+                Sector: Sector
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                alert("Error: " + data.error);
+            }
+        })
+        .catch(err => {
+            console.error("Server error:", err);
+            alert("Algo salió mal.");
+        });
+    }
+</script>
+{% endblock %}
