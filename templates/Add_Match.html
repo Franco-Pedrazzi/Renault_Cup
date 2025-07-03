@@ -4,16 +4,16 @@
 <div>
     <p>Deporte</p>
         <select id="Deporte">
-            <option value="Fut">Futbol</option>
-            <option value="Bas">Basquet</option>
-            <option value="Vol">Voley</option>
+            <option value="F">Futbol</option>
+            <option value="B">Basquet</option>
+            <option value="V">Voley</option>
         </select>
 
     <p>Sexo de los Equipos </p>
         <select id="Sexo">
             <option value=""></option>
-            <option value="Mas">Masculino</option>
-            <option value="Fem">Femenino</option>
+            <option value="M">Masculino</option>
+            <option value="F">Femenino</option>
         </select>
 
     <p>Categoria</p>
@@ -45,22 +45,22 @@
    <button onclick="addDriver()">Añadir</button>
 </div>
 
-<ul id="Partido-list"></ul> <!-- list to display new Jugadores -->
+<ul id="Partido-list"></ul> 
 
 <script>
     function addDriver() {
         const Deporte = document.getElementById('Deporte').value;
         const Sexo = document.getElementById('Sexo').value;
         const Categoria = document.getElementById('Categoria').value;
-        const id_arbitro = document.getElementById('Arbitro').value;
-        const id_planillero = document.getElementById('Planillero').value;
-        const id_equipo_1 = document.getElementById('Equipo_1').value;
-        const id_equipo_2 = document.getElementById('Equipo_2').value;
+        const Arbitro = document.getElementById('Arbitro').value;
+        const Planillero = document.getElementById('Planillero').value;
+        const Equipo_1 = document.getElementById('Equipo_1').value;
+        const Equipo_2 = document.getElementById('Equipo_2').value;
         const Fase = document.getElementById('Fase').value;
         const Horario_inicio = document.getElementById('Horario_inicio').value;
         const Horario_final = document.getElementById('Horario_final').value;
 
-        fetch('/api/Players', {  // make sure this matches your Flask route
+        fetch('/api/Matches', {  // make sure this matches your Flask route
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -69,10 +69,10 @@
                 Deporte: Deporte,
                 Sexo: Sexo,
                 Categoria: Categoria,
-                id_arbitro: id_arbitro,
-                id_planillero: id_planillero,
-                id_equipo_1: id_equipo_1,
-                id_equipo_2: id_equipo_2,
+                Arbitro: Arbitro,
+                Planillero: Planillero,
+                Equipo_1: Equipo_1,
+                Equipo_2: Equipo_2,
                 Fase: Fase,
                 Horario_inicio: Horario_inicio,
                 Horario_final: Horario_final

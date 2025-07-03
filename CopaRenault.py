@@ -12,7 +12,7 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost/RenaultCup'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:password1234@localhost/RenaultCup'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False
 
 db=SQLAlchemy(app)
@@ -35,6 +35,20 @@ class Equipo(db.Model):
     Deporte = db.Column(db.String(10))
     Sexo= db.Column(db.String(10))
     Categoria=db.Column(db.String(10))
+
+class Partido(db.Model):
+    __tableNombre__ = 'Partido'
+    id_partido = db.Column(db.Integer, primary_key=True)
+    Deporte = db.Column(db.String(1))
+    Categoria = db.Column(db.String(10))
+    Sexo = db.Column(db.String(1))
+    Arbitro = db.Column(db.Integer)
+    Planillero = db.Column(db.Integer)
+    Equipo_1 = db.Column(db.Integer)
+    Equipo_2 = db.Column(db.Integer)
+    Fase = db.Column(db.String(25))
+    Horario_inicio = db.Column(db.String(8))
+    Horario_final = db.Column(db.String(8))
 
 class User(UserMixin,db.Model):
     __tablename__ = 'Cuenta_habilitada' 
@@ -147,6 +161,10 @@ def Create_Player():
 @app.route("/Add Equipo")
 def hell():
     return render_template('Add_Equipo.html')
+
+@app.route("/Add Match")
+def Create_Match():
+    return render_template('Add_Match.html')
 
 @app.route('/api/Equipo', methods=['POST'])
 def add_Equipo():
@@ -266,6 +284,77 @@ def get_Jugadores():
                 'Comida_Especial': j.Comida_Especial
             })
         return jsonify({'success': True, 'Jugador': result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+    
+@app.route('/api/Matches', methods=['POST'])
+def add_Matches():
+    try:
+        data = request.get_json()
+        Deporte = data.get('Deporte')
+        Categoria = data.get('Categoria')
+        Sexo = data.get('Sexo')
+        Equipo_1 = data.get('Equipo_1')
+        Equipo_2 = data.get('Equipo_2')
+        Arbitro = data.get('Arbitro')
+        Planillero = data.get('Planillero')
+        Horario_inicio = data.get('Horario_inicio')
+        Horario_final = data.get('Horario_final')
+
+        if not (Deporte and Sexo and Equipo_1 and Equipo_2 and Arbitro and Planillero and Horario_inicio and Horario_final):
+            return jsonify({'success': False, 'error': (Deporte , Categoria , Sexo , Equipo_1 , Equipo_2 , Arbitro , Planillero , Horario_inicio , Horario_final)}), 400
+        
+        new_Partido = Partido(
+            Deporte=Deporte,
+            Categoria=Categoria,
+            Sexo=Sexo,
+            Equipo_1=Equipo_1,
+            Equipo_2=Equipo_2,
+            Arbitro=Arbitro,
+            Planillero=Planillero,
+            Horario_inicio=Horario_inicio,
+            Horario_final=Horario_final
+        )
+
+        db.session.add(new_Partido)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'Partido': {
+                'Deporte': Partido.Deporte,
+                'Categoria': Partido.Categoria,
+                'Sexo': Partido.Sexo,
+                'Equipo_1': Partido.Equipo_1,
+                'Equipo_2': Partido.Equipo_2,
+                'Arbitro': Partido.Arbitro,
+                'Planillero': Partido.Planillero,
+                'Horario_inicio': Partido.Horario_inicio,
+                'Horario_final': Partido.Horario_final
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/Matches', methods=['GET'])
+def get_Matches():
+    try:
+        new_Match = Partido.query.all()
+        result = []
+        for j in new_Match:
+            result.append({
+                'id_partido': Partido.id_partido,
+                'Deporte': Partido.Deporte,
+                'Categoria': Partido.Categoria,
+                'Sexo': Partido.Sexo,
+                'Equipo_1': Partido.Equipo_1,
+                'Equipo_2': Partido.Equipo_2,
+                'Arbitro': Partido.Arbitro,
+                'Planillero': Partido.Planillero,
+                'Horario_inicio': Partido.Horario_inicio,
+                'Horario_final': Partido.Horario_final
+            })
+        return jsonify({'success': True, 'Equipo': result})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 

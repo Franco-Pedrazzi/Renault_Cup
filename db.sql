@@ -61,7 +61,7 @@ DROP TABLE IF EXISTS `Partido`;
 CREATE TABLE `Partido` (
   `id_partido`int AUTO_INCREMENT,
   `Deporte` VARCHAR(1) NULL DEFAULT NULL,
-  `Categoria` VARCHAR(10) NULL DEFAULT NULL,
+  `Categoria` VARCHAR(3) NULL DEFAULT NULL,
   `Sexo` VARCHAR(1) NULL DEFAULT NULL,
   `Arbitro` int NULL DEFAULT NULL,
   `Planillero` int NULL DEFAULT NULL,
