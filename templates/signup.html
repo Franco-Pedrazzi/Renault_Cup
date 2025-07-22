@@ -9,7 +9,7 @@
    <button onclick="addDriver()">Signup</button>
 </div>
 
-<ul id="Count-list"></ul> 
+
 
 <script>
     function addDriver() {
@@ -28,13 +28,9 @@
                 Contraseña: Contraseña
             })
         })
-        .then(res => res.json())
+       .then(res => res.json())
         .then(data => {
-            if (data.success) {
-                const li = document.createElement('li');
-                li.textContent = `${data.Jugador.Nombre} (${data.Jugador.email})`;
-                document.getElementById('Count-list').appendChild(li);
-            } else {
+            if (!data.success) {
                 alert("Error: " + data.error);
             }
         })

@@ -1,43 +1,52 @@
-from flask import Flask, render_template, request,jsonify,flash,redirect,url_for
-from flask_sqlalchemy  import SQLAlchemy
-from sqlalchemy import inspect
+from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
+from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-from werkzeug.security import generate_password_hash, check_password_hash
+import firebase_admin
+from firebase_admin import credentials, auth
+import requests
 
 app = Flask(__name__)
 CORS(app)
 
+# Inicializar Firebase
+Fb = credentials.Certificate("/home/usuario/Desktop/FP/Laboratorio/Renault_Cup/renaultcup-4a1d2-firebase-adminsdk-fbsvc-a328b4f31a.json")
+firebase_admin.initialize_app(Fb)
+
+# Configuración de Flask
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost/RenaultCup'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.secret_key = 'secret'
+
+# Inicializar extensiones
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost/renaultcup'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False
+db = SQLAlchemy(app)
 
-db=SQLAlchemy(app)
-
+# Modelos
 class Jugador(db.Model):
-    __tableNombre__ = 'Jugador'  
-    id= db.Column(db.Integer, primary_key=True)
-    Nombre= db.Column(db.String(100))
+    __tablename__ = 'Jugador'
+    id = db.Column(db.Integer, primary_key=True)
+    Nombre = db.Column(db.String(100))
     id_equipo = db.Column(db.Integer)
-    DNI= db.Column(db.String(20))
-    Telefono=db.Column(db.String(20))
-    Email= db.Column(db.String(100))
+    DNI = db.Column(db.String(20))
+    Telefono = db.Column(db.String(20))
+    Email = db.Column(db.String(100))
     Fecha_nacimiento = db.Column(db.String(100))
     Comida_Especial = db.Column(db.String(100))
 
 class Equipo(db.Model):
-    __tableNombre__ = 'Equipo'  
-    id_equipo= db.Column(db.Integer, primary_key=True)
-    Colegio= db.Column(db.String(50))
+    __tablename__ = 'Equipo'
+    id_equipo = db.Column(db.Integer, primary_key=True)
+    Colegio = db.Column(db.String(50))
     Deporte = db.Column(db.String(10))
-    Sexo= db.Column(db.String(10))
-    Categoria=db.Column(db.String(10))
+    Sexo = db.Column(db.String(10))
+    Categoria = db.Column(db.String(10))
 
 class Partido(db.Model):
-    __tableNombre__ = 'Partido'
+    __tablename__ = 'Partido'
     id_partido = db.Column(db.Integer, primary_key=True)
     Deporte = db.Column(db.String(1))
     Categoria = db.Column(db.String(10))
@@ -50,108 +59,67 @@ class Partido(db.Model):
     Horario_inicio = db.Column(db.String(8))
     Horario_final = db.Column(db.String(8))
 
-class User(UserMixin,db.Model):
-    __tablename__ = 'Cuenta_habilitada' 
-    id_cuenta= db.Column(db.Integer, primary_key=True)
-    Nombre= db.Column(db.String(40))
-    Contraseña= db.Column(db.String(20))
-    Email= db.Column(db.String(40))
-    Rango= db.Column(db.String(20))
-
 class Staff(db.Model):
     __tablename__ = 'Staff'
     id_staff = db.Column(db.Integer, primary_key=True)
     Nombre = db.Column(db.String(40))
     DNI = db.Column(db.Integer)
     Telefono = db.Column(db.Integer)
-    Email = db.Column(db.String(40))  
+    Email = db.Column(db.String(40))
     Trabajo = db.Column(db.String(15))
     Sector = db.Column(db.String(20))
 
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-with app.app_context():
-    inspector = inspect(db.engine)
-    tables = inspector.get_table_names()
-    print(tables)
-
-    @staticmethod
-    def get(user_id):
-        return User.query.get(int(user_id))
-
-    @staticmethod
-    def validate(username, password):
-        user = User.query.filter_by(username=username).first()
-        if user and user.check_password(password):
-            return user
-        return None
-@app.route("/signup", methods=["POST"])
-def Signup():
-    try:
-        data = request.get_json()
-
-        Nombre = data.get('Nombre')
-        Email = data.get('Email')
-        Contraseña = data.get('Contraseña')
-        Rango = "C"  
-
-        if not (Nombre and Email and Contraseña):
-            return jsonify({'success': False, 'error': 'Faltan campos requeridos'}), 400
-
-        if User.query.filter_by(Nombre=Nombre).first():
-            return jsonify({'success': False, 'error': 'El nombre de usuario ya existe'}), 409
-        if User.query.filter_by(Email=Email).first():
-            return jsonify({'success': False, 'error': 'El email ya está en uso'}), 409
-
-        new_user = User(Nombre=Nombre, Email=Email, Rango=Rango)
-        new_user.set_password(Contraseña)
-
-        db.session.add(new_user)
-        db.session.commit()
-
-        return jsonify({
-            'success': True,
-            'Jugador': {
-                'Nombre': new_user.Nombre,
-                'email': new_user.Email
-            }
-        })
-
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-@app.route("/Count")
-def signup():
-    return render_template('signup.html')
+class FirebaseUser(UserMixin):
+    def __init__(self, uid, email):
+        self.id = uid
+        self.email = email
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.get(user_id)
-    
+    try:
+        user_record = auth.get_user(user_id)
+        return FirebaseUser(user_record.uid, user_record.email)
+    except:
+        return None
 
+def firebase_login(email, password):
+    api_key = "TU_API_KEY_DE_FIREBASE"
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
+    payload = {
+        "email": email,
+        "password": password,
+        "returnSecureToken": True
+    }
+    res = requests.post(url, json=payload)
+    if res.status_code == 200:
+        return res.json()
+    return None
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
     if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-        user = User.validate(username, password)
-        if user:
-            login_user(user)
-            flash("Logged in successfully!")
-            return redirect(url_for("dashboard"))
-        else:
-            flash("Invalid credentials")
-    return render_template("login.html")
+        try:
+            nombre = request.form.get("Nombre")
+            email = request.form.get("Email")
+            password = request.form.get("Contraseña")
+            
+            if not (nombre and email and password): 
+                print(nombre , email , password) 
+                return render_template("signup.html", error="Faltan campos")
+            
+            user_record = auth.create_user(email=email, password=password)
+            
+
+            return redirect(url_for("login")) 
+        except Exception as e:
+            return render_template("signup.html", error=str(e))
+    
+    return render_template("signup.html")
 
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    return f"Hello, {current_user.username}!"
+    return f"Bienvenido, {current_user.email}"
 
 @app.route("/logout")
 @login_required
