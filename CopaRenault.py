@@ -5,14 +5,22 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 import firebase_admin
 from firebase_admin import credentials, auth
 import requests
-
+import pyrebase
+firebaseConfig = {
+  'apiKey': "AIzaSyBnLNMylTO8bGoO6X-XXdtJ9dTAKOf3LaI",
+  'authDomain': "renaultcup-4a1d2.firebaseapp.com",
+  'projectId': "renaultcup-4a1d2",
+  'storageBucket': "renaultcup-4a1d2.firebasestorage.app",
+  'messagingSenderId': "1031158605901",
+  'appId': "1:1031158605901:web:2c7f08ec7c34bb33585404",
+  'measurementId': "G-67C71NFEQ5"
+}
 app = Flask(__name__)
 CORS(app)
 
 # Inicializar Firebase
-Fb = credentials.Certificate("/home/usuario/Desktop/FP/Laboratorio/Renault_Cup/renaultcup-4a1d2-firebase-adminsdk-fbsvc-a328b4f31a.json")
-firebase_admin.initialize_app(Fb)
-
+firebase=pyrebase.initialize_app(firebaseConfig)
+auth=firebase.auth()
 # Configuración de Flask
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost/RenaultCup'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -99,15 +107,15 @@ def firebase_login(email, password):
 def signup():
     if request.method == "POST":
         try:
-            nombre = request.form.get("Nombre")
-            email = request.form.get("Email")
-            password = request.form.get("Contraseña")
-            
+            data = request.get_json()
+            nombre = data.get("Nombre")
+            email = data.get("Email")
+            password = data.get("Contraseña")
+            print(nombre , email , password)
             if not (nombre and email and password): 
-                print(nombre , email , password) 
                 return render_template("signup.html", error="Faltan campos")
             
-            user_record = auth.create_user(email=email, password=password)
+            user_record = auth.create_user_with_email_and_password(email=email, password=password)
             
 
             return redirect(url_for("login")) 

@@ -1,4 +1,4 @@
-#!/home/usuario/Desktop/FP/Laboratorio/Renault_Cup/.venv/bin/python
+#!/home/usuario/Desktop/FP/Laboratorio/Renault_Cup/.venv/bin/python3
 # -*- coding: utf-8 -*-
 # Copyright 2025 Google LLC
 #
