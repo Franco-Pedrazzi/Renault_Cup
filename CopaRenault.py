@@ -6,6 +6,7 @@ import firebase_admin
 from firebase_admin import credentials, auth
 import requests
 import pyrebase
+
 firebaseConfig = {
   'apiKey': "AIzaSyBnLNMylTO8bGoO6X-XXdtJ9dTAKOf3LaI",
   'authDomain': "renaultcup-4a1d2.firebaseapp.com",
@@ -13,7 +14,8 @@ firebaseConfig = {
   'storageBucket': "renaultcup-4a1d2.firebasestorage.app",
   'messagingSenderId': "1031158605901",
   'appId': "1:1031158605901:web:2c7f08ec7c34bb33585404",
-  'measurementId': "G-67C71NFEQ5"
+  'measurementId': "G-67C71NFEQ5",
+  'databaseURL':"https://renaultcup-4a1d2-default-rtdb.firebaseio.com/"
 }
 app = Flask(__name__)
 CORS(app)
@@ -21,6 +23,7 @@ CORS(app)
 # Inicializar Firebase
 firebase=pyrebase.initialize_app(firebaseConfig)
 auth=firebase.auth()
+
 # Configuración de Flask
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost/RenaultCup'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -82,6 +85,16 @@ class FirebaseUser(UserMixin):
         self.id = uid
         self.email = email
 
+@app.context_processor
+def inject_datos_globales():
+    print(current_user.is_authenticated)
+    return dict(nombre_torneo="Copa Renault", current_user=current_user)
+
+@app.context_processor
+def inject_user():
+    return dict(current_user=current_user)
+
+
 @login_manager.user_loader
 def load_user(user_id):
     try:
@@ -91,7 +104,7 @@ def load_user(user_id):
         return None
 
 def firebase_login(email, password):
-    api_key = "TU_API_KEY_DE_FIREBASE"
+    api_key = firebaseConfig["apiKey"]
     url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
     payload = {
         "email": email,
@@ -103,35 +116,58 @@ def firebase_login(email, password):
         return res.json()
     return None
 
-@app.route("/signup", methods=["GET", "POST"])
+@app.route("/signup", methods=["POST"])
+def signupApi():
+    try:
+        data = request.get_json()
+        nombre = data.get("Nombre")
+        email = data.get("Email")
+        password = data.get("Contraseña")
+
+        if not (nombre and email and password):
+            return jsonify({"success": False, "error": "Faltan campos"}), 400
+
+        user_record = auth.create_user_with_email_and_password(email, password)
+
+        return jsonify({"success": True}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+
+@app.route("/login", methods=["POST"])
+def loginApi():
+    try:
+        data = request.get_json()
+        email = data.get("Email")
+        password = data.get("Contraseña")
+
+        if not (email and password):
+            return jsonify({"success": False, "error": "Faltan datos"}), 400
+
+        user_info = firebase_login(email, password)
+        if user_info is None:
+            return jsonify({"success": False, "error": "Credenciales incorrectas"}), 401
+
+        uid = user_info.get("localId")
+        user = FirebaseUser(uid=uid, email=email)
+        login_user(user)
+        
+        return jsonify({"success": True}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/signup")
 def signup():
-    if request.method == "POST":
-        try:
-            data = request.get_json()
-            nombre = data.get("Nombre")
-            email = data.get("Email")
-            password = data.get("Contraseña")
-            print(nombre , email , password)
-            if not (nombre and email and password): 
-                return render_template("signup.html", error="Faltan campos")
-            
-            user_record = auth.create_user_with_email_and_password(email=email, password=password)
-            
+    return render_template('signup.html')
 
-            return redirect(url_for("login")) 
-        except Exception as e:
-            return render_template("signup.html", error=str(e))
-    
-    return render_template("signup.html")
-
-@app.route("/dashboard")
-@login_required
-def dashboard():
-    return f"Bienvenido, {current_user.email}"
-
+@app.route("/login")
+def login():
+    return render_template('login.html')
 @app.route("/logout")
 @login_required
 def logout():
+    current_user.is_authenticated
     logout_user()
     return redirect(url_for("login"))
 

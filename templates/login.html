@@ -3,17 +3,37 @@
 {% block body %}
 <body>
   <h2>Login</h2>
-  <form method="POST">
-    <label>Username:</label><input type="text" name="username"><br>
-    <label>Password:</label><input type="password" name="password"><br>
+  <form id="loginForm">
+    <label>Email:</label><input type="text" id="Email"><br>
+    <label>Contraseña:</label><input type="password" id="Contraseña"><br>
     <input type="submit" value="Login">
   </form>
-  {% with messages = get_flashed_messages() %}
-    {% if messages %}
-      <ul>{% for msg in messages %}<li>{{ msg }}</li>{% endfor %}</ul>
-    {% endif %}
-  {% endwith %}
+
+  <div id="mensaje"></div>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      const email = document.getElementById("Email").value;
+      const password = document.getElementById("Contraseña").value;
+
+      const res = await fetch("/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          Email: email,
+          Contraseña: password
+        })
+      });
+
+      const data = await res.json();
+      const mensaje = document.getElementById("mensaje");
+
+
+    });
+  </script>
 </body>
 {% endblock %}
-
-

@@ -3,15 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Copa Renault </title>
+    <title>{{ nombre_torneo }}</title>
 </head>
 <body>
-    <div style="display: flex;background-color: darkgray;">
-        <h1>Copa Renault </h1>
+    <div style="display: flex; justify-content: space-between; background-color: darkgray; padding: 10px; align-items: center;">
+        <h1 style="margin: 0;">{{ nombre_torneo }}</h1>
+
+        <div>
+            <button onclick="location.href='{{ url_for('Index') }}'">Inicio</button>
+            {% if current_user.is_authenticated %}
+                <span>Bienvenido/a, {{ current_user.email }}</span>
+                <form action="{{ url_for('logout') }}" method="get" style="display:inline;">
+                    <button type="submit">Cerrar sesión</button>
+                </form>
+            {% else %}
+                <a href="{{ url_for('login') }}">Iniciar sesión</a>
+            {% endif %}
+        </div>
     </div>
-    
-     <button onclick="location.href='http://127.0.0.1:5000/'">Inicio</button>
+
     {% block body %}
-    {%endblock%}
+    {% endblock %}
 </body>
 </html>
