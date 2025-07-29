@@ -37,6 +37,12 @@ login_manager.login_view = "login"
 db = SQLAlchemy(app)
 
 # Modelos
+
+class FirebaseUser(UserMixin):
+    def __init__(self, uid, email):
+        self.id = uid  
+        self.email = email
+
 class Jugador(db.Model):
     __tablename__ = 'Jugador'
     id = db.Column(db.Integer, primary_key=True)
@@ -85,15 +91,6 @@ class FirebaseUser(UserMixin):
         self.id = uid
         self.email = email
 
-@app.context_processor
-def inject_datos_globales():
-    print(current_user.is_authenticated)
-    return dict(nombre_torneo="Copa Renault", current_user=current_user)
-
-@app.context_processor
-def inject_user():
-    return dict(current_user=current_user)
-
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -136,7 +133,7 @@ def signupApi():
 
 
 @app.route("/login", methods=["POST"])
-def loginApi():
+def loginApi_Post():
     try:
         data = request.get_json()
         email = data.get("Email")
@@ -152,10 +149,21 @@ def loginApi():
         uid = user_info.get("localId")
         user = FirebaseUser(uid=uid, email=email)
         login_user(user)
-        
+
         return jsonify({"success": True}), 200
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/login", methods=["GET"])
+def loginApi_Get():
+
+    try:
+        result = [{
+                'Cuerrent_user': current_user,
+            }]
+        return jsonify({'success': True, 'Equipo': result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route("/signup")
 def signup():
