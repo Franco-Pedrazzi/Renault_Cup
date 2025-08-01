@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
+from flask import Flask, render_template, request, jsonify, flash, redirect,session, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -18,7 +18,7 @@ firebaseConfig = {
   'databaseURL':"https://renaultcup-4a1d2-default-rtdb.firebaseio.com/"
 }
 app = Flask(__name__)
-CORS(app)
+CORS(app,supports_credentials=True)
 
 # Inicializar Firebase
 firebase=pyrebase.initialize_app(firebaseConfig)
@@ -28,7 +28,8 @@ auth=firebase.auth()
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost/RenaultCup'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = 'secret'
-
+app.config['SESSION_COOKIE_SECURE'] = False  # Solo para testing local
+app.config['SESSION_COOKIE_SAMESITE'] = "Lax" 
 # Inicializar extensiones
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -37,11 +38,6 @@ login_manager.login_view = "login"
 db = SQLAlchemy(app)
 
 # Modelos
-
-class FirebaseUser(UserMixin):
-    def __init__(self, uid, email):
-        self.id = uid  
-        self.email = email
 
 class Jugador(db.Model):
     __tablename__ = 'Jugador'
@@ -149,22 +145,25 @@ def loginApi_Post():
         uid = user_info.get("localId")
         user = FirebaseUser(uid=uid, email=email)
         login_user(user)
-
+        flash(current_user.email)
         return jsonify({"success": True}), 200
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
-@app.route("/login", methods=["GET"])
+@app.route("/loginGET", methods=["GET"])
 def loginApi_Get():
-
+    print(current_user.email)
     try:
-        result = [{
-                'Cuerrent_user': current_user,
+        if current_user.is_authenticated:
+            result = [{
+                'email': current_user.email
             }]
-        return jsonify({'success': True, 'Equipo': result})
+            return jsonify({'success': True, 'user': result})
+        else:
+            return jsonify({'success': False, 'error': 'Usuario no autenticado'}), 401
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
-
+    
 @app.route("/signup")
 def signup():
     return render_template('signup.html')

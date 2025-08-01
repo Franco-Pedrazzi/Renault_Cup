@@ -1,47 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Copa Renault</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Copa Renault</title>
 </head>
+
 <body>
-    <div style="display: flex; justify-content: space-between; background-color: darkgray; padding: 10px; align-items: center;">
-        <h1 style="margin: 0;">Copa Renault</h1>
+  <div
+    style="display: flex; justify-content: space-between; background-color: darkgray; padding: 10px; align-items: center;">
+    <h1 style="margin: 0;">Copa Renault</h1>
+    <button onclick="fetchData()">Inicio</button>
+    <button onclick="location.href='http://127.0.0.1:5000/Add Equipo'">Añadir Equipo</button>
+    <button onclick="location.href='http://127.0.0.1:5000/Add Player'">Añadir Persona</button>
+    <button onclick="location.href='http://127.0.0.1:5000/Add Match'">Añadir Partido</button>
+    <button onclick="location.href='http://127.0.0.1:5000/Add Staff'">Añadir Empleado</button>
 
-        <div>
-            {% if current_user.is_authenticated %}
-                <button onclick="console.log('{{ current_user.email | escape }}')">Inicio</button>
-                <span>Bienvenido/a, {{ current_user.email }}</span>
-                <form action="{{ url_for('logout') }}" method="get" style="display:inline;">
-                    <button type="submit">Cerrar sesión</button>
-                </form>
-            {% else %}
-                <button onclick="console.log('No autenticado')">Inicio</button>
-                <a href="{{ url_for('login') }}">Iniciar sesión</a>
-            {% endif %}
-        </div>
+    <div>
+
+      {% if current_user.is_authenticated %}
+      <span>Bienvenido/a, {{ current_user.email }}</span>
+      <form action="{{ url_for('logout') }}" method="get" style="display:inline;">
+        <button type="submit">Cerrar sesión</button>
+      </form>
+      {% else %}
+      <button onclick="location.href='http://127.0.0.1:5000/login'">Login</button>
+      <button onclick="location.href='http://127.0.0.1:5000/signup'">Signup</button>
+      {% endif %}
     </div>
+  </div>
 
-    {% block body %}
-    {% endblock %}
+  {% block body %}{% endblock %}
 
-    <script>
+  <script>
     async function fetchData() {
-        const apiUrl = 'http://127.0.0.1:5000/login/GET';
-        try {
-            const response = await fetch(apiUrl);
-            if (!response.ok) {
-                throw new Error(`Response status: ${response.status}`);
-            }
-            const data = await response.json();
-            console.log('Data received:', data);
-        } catch (error) {
-            console.error('Error fetching data:', error);
+      const apiUrl = 'http://127.0.0.1:5000/loginGET';
+      try {
+        const response = await fetch(apiUrl, {
+          credentials: 'include' 
+        });
+        if (!response.ok) {
+          throw new Error(`Network error: ${response.status}`);
         }
+        const data = await response.json();
+        console.log('Data received:', data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
     }
-
-    fetchData();
-    </script>
+  </script>
 </body>
+
 </html>
