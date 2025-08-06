@@ -1,0 +1,208 @@
+{% extends "./base.html" %}
+
+{% block body %}
+      {% if current_user.rango=="A" %}
+      <H1>Hola</H1>
+      {% else %}
+  
+    <H1>Hola Genio</H1>
+    
+    
+      {% endif %}
+<button onclick="handle()">inscribirse</button>
+<div id="ShowTeam">
+    <table id="Table"></table>
+</div>
+
+<div id="AddTeam" style="display:none;">
+   <p>Colegio:<input id="Colegio" type="text"></p>
+
+   <p>Deporte</p>
+       <select id="Deporte">
+        <option value=""></option>
+        <option value="Fut">Futbol</option>
+        <option value="Bas">Basquet</option>
+        <option value="Vol">Voley</option>
+    </select> 
+    <p>Sexo del Equipo </p>
+   <select id="Sexo">
+        <option value=""></option>
+        <option value="Mas">Masculino</option>
+        <option value="Fem">Femenino</option>
+    </select>
+
+        <p>Categoria</p>
+   <select id="Categoria">
+        <option value=""></option>
+        <option value="May">Mayor</option>
+        <option value="Int">Intermedio</option>
+        <option value="Men">Menor</option>
+    </select>
+    <br>
+    <br>
+   <button onclick="addDriver()">Añadir</button>
+</div>
+
+<script>
+    const usuarioRango =  "{{ current_user.rango }}";
+
+    function handle(){
+        const ins=document.getElementById('AddTeam')
+        if (ins.style.display == 'none'){
+            document.getElementById('ShowTeam').style.display = 'none';
+            ins.style.display = 'block';
+        }else{
+            document.getElementById('ShowTeam').style.display = 'block';
+            ins.style.display = 'none'; 
+            loadEquipos()
+        }
+
+    }
+
+
+function loadEquipos() {
+    fetch('/api/Equipos')
+    .then(response => response.json())
+    .then(equipos => {
+        const table = document.getElementById("Table");
+        table.border = 1;
+
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        ['ID', 'Colegio', 'Deporte', 'Sexo', 'Categoría'].forEach(text => {
+            const th = document.createElement('th');
+            th.innerText = text;
+            headerRow.appendChild(th);
+        });
+
+        if (usuarioRango === 'A') {
+            headerRow.appendChild(document.createElement('th')).innerText = 'Editar';
+            headerRow.appendChild(document.createElement('th')).innerText = 'Eliminar';
+        }
+
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        equipos.forEach(equipo => {
+            const row = document.createElement('tr');
+
+            [equipo.id, equipo.colegio, equipo.deporte, equipo.sexo, equipo.categoria].forEach(val => {
+                const td = document.createElement('td');
+                td.innerText = val;
+                row.appendChild(td);
+            });
+
+            if (usuarioRango === 'A') {
+                const editBtn = document.createElement('button');
+                editBtn.innerText = 'Editar';
+                editBtn.onclick = () => editEquipo(equipo);
+                const editTd = document.createElement('td');
+                editTd.appendChild(editBtn);
+                row.appendChild(editTd);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.innerText = 'Eliminar';
+                deleteBtn.onclick = () => deleteEquipo(equipo.id);
+                const deleteTd = document.createElement('td');
+                deleteTd.appendChild(deleteBtn);
+                row.appendChild(deleteTd);
+            }
+
+            tbody.appendChild(row);
+        });
+
+        table.appendChild(tbody);
+        const container = document.getElementById('ShowTeam');
+        container.innerHTML = '';
+        container.appendChild(table);
+    })
+    .catch(error => {
+        console.error("Error al cargar equipos:", error);
+    });
+}
+
+   
+    window.onload = loadEquipos;
+
+
+function addDriver() {
+    const Colegio = document.getElementById('Colegio').value;
+    const Sexo = document.getElementById('Sexo').value;
+    const Categoria = document.getElementById('Categoria').value;
+    const Deporte = document.getElementById('Deporte').value;
+
+    const datos = {
+        Colegio: Colegio,
+        Sexo: Sexo,
+        Categoria: Categoria,
+        Deporte: Deporte
+    };
+
+    let url = '/api/Equipo';
+    let metodo = 'POST';
+
+    // Si estamos editando
+    if (editandoId !== null) {
+        url = `/api/Equipo/${editandoId}`;
+        metodo = 'PUT';
+    }
+
+    fetch(url, {  
+        method: metodo,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(datos)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            alert("Error: " + data.error);
+        } else {
+            editandoId = null; // salir del modo edición
+            document.getElementById('Colegio').value = '';
+            document.getElementById('Deporte').value = '';
+            document.getElementById('Sexo').value = '';
+            document.getElementById('Categoria').value = '';
+            handle(); // Ocultar formulario y mostrar tabla
+        }
+    })
+    .catch(err => {
+        console.error("Server error:", err);
+        alert("Something went wrong.");
+    });
+}
+
+function deleteEquipo(id) {
+    if (!confirm('¿Seguro que querés eliminar este equipo?')) return;
+
+    fetch(`/api/Equipo/${id}`, {
+        method: 'DELETE'
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            loadEquipos(); 
+        } else {
+            alert("Error al eliminar: " + data.error);
+        }
+    })
+    .catch(error => {
+        console.error("Error al eliminar equipo:", error);
+    });
+}
+function editEquipo(equipo) {
+    editandoId = equipo.id;
+
+    document.getElementById('Colegio').value = equipo.colegio;
+    document.getElementById('Deporte').value = equipo.deporte;
+    document.getElementById('Sexo').value = equipo.sexo;
+    document.getElementById('Categoria').value = equipo.categoria;
+
+    document.getElementById('ShowTeam').style.display = 'none';
+    document.getElementById('AddTeam').style.display = 'block';
+}
+
+</script>
+{% endblock %}

@@ -1,0 +1,177 @@
+{% extends "./base.html" %}
+
+{% block body %}
+{% if current_user.rango=="A" %}
+    <h1>Hola</h1>
+    <button onclick="handle()">Insertar Partido</button>
+{% else %}
+    <h1>Hola Genio</h1>
+{% endif %}
+
+<div id="ShowMatch"></div>
+
+<div id="AddMatch" style="display:none;">
+    <p>Deporte:</p>
+    <select id="Deporte">
+        <option value="F">Fútbol</option>
+        <option value="B">Básquet</option>
+        <option value="V">Vóley</option>
+    </select>
+
+    <p>Sexo:</p>
+    <select id="Sexo">
+        <option value=""></option>
+        <option value="M">Masculino</option>
+        <option value="F">Femenino</option>
+    </select>
+
+    <p>Categoría:</p>
+    <select id="Categoria">
+        <option value=""></option>
+        <option value="May">Mayor</option>
+        <option value="Int">Intermedio</option>
+        <option value="Men">Menor</option>
+    </select>
+
+    <p>ID del Árbitro: <input id="Arbitro" type="number"></p>
+    <p>ID del Planillero: <input id="Planillero" type="number"></p>
+    <p>ID del Equipo 1: <input id="Equipo_1" type="number"></p>
+    <p>ID del Equipo 2: <input id="Equipo_2" type="number"></p>
+
+    <p>Fase:</p>
+    <select id="Fase">
+        <option value=""></option>
+        <option value="Eliminatoria">Eliminatoria</option>
+        <option value="Octavos">Octavos de final</option>
+        <option value="Cuartos">Cuartos de final</option>
+        <option value="Semifinal">Semifinal</option>
+        <option value="Final">Final</option>
+    </select>
+
+    <p>Hora de inicio: <input id="Horario_inicio" type="time"></p>
+    <p>Hora de fin: <input id="Horario_final" type="time"></p>
+
+    <button onclick="addMatch()">Añadir</button>
+</div>
+
+<script>
+const usuarioRango = "{{ current_user.rango }}";
+
+function handle() {
+    const form = document.getElementById("AddMatch");
+    const table = document.getElementById("ShowMatch");
+    if (form.style.display === "none") {
+        form.style.display = "block";
+        table.style.display = "none";
+    } else {
+        form.style.display = "none";
+        table.style.display = "block";
+        loadMatches();
+    }
+}
+
+function addMatch() {
+    const Deporte = document.getElementById('Deporte').value;
+    const Sexo = document.getElementById('Sexo').value;
+    const Categoria = document.getElementById('Categoria').value;
+    const Arbitro = document.getElementById('Arbitro').value;
+    const Planillero = document.getElementById('Planillero').value;
+    const Equipo_1 = document.getElementById('Equipo_1').value;
+    const Equipo_2 = document.getElementById('Equipo_2').value;
+    const Fase = document.getElementById('Fase').value;
+    const Horario_inicio = document.getElementById('Horario_inicio').value;
+    const Horario_final = document.getElementById('Horario_final').value;
+
+    fetch('/api/Matches', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            Deporte, Sexo, Categoria, Arbitro, Planillero,
+            Equipo_1, Equipo_2, Fase, Horario_inicio, Horario_final
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            alert("Error: " + data.error);
+        } else {
+            handle();
+        }
+    })
+    .catch(err => {
+        console.error("Server error:", err);
+        alert("Algo salió mal.");
+    });
+}
+
+async function loadMatches() {
+    try {
+        const res = await fetch('/api/Matches');
+        const data = await res.json();
+
+        if (!data.success || !Array.isArray(data.Matches)) {
+            console.error("Respuesta inesperada:", data);
+            alert("Error al obtener los partidos.");
+            return;
+        }
+
+        const container = document.getElementById("ShowMatch");
+        container.innerHTML = "";
+
+        for (const match of data.Matches) {
+            // Obtenemos nombres de equipos
+            const equipo1 = await getEquipo(match.Equipo_1);
+            const equipo2 = await getEquipo(match.Equipo_2);
+
+            const table = document.createElement("table");
+            table.border = 1;
+            table.style.marginBottom = "15px";
+
+            const row1 = document.createElement("tr");
+            row1.innerHTML = `
+                <td><strong>Fase:</strong> ${match.Fase}</td>
+                <td><strong>Inicio:</strong> ${match.Horario_inicio}</td>
+                <td><strong>Fin:</strong> ${match.Horario_final}</td>
+                <td><strong>Duración:</strong> ${match.Duracion}</td>
+            `;
+            table.appendChild(row1);
+
+            const row2 = document.createElement("tr");
+            row2.innerHTML = `
+                <td><strong>Árbitro:</strong> ${match.Arbitro}</td>
+                <td><strong>Planillero:</strong> ${match.Planillero}</td>
+            `;
+            table.appendChild(row2);
+
+            const row3 = document.createElement("tr");
+            row3.innerHTML = `
+                <td><strong>Equipo 1:</strong> ${equipo1 ? equipo1.nombre : "Desconocido"}</td>
+                <td><strong>Equipo 2:</strong> ${equipo2 ? equipo2.nombre : "Desconocido"}</td>
+            `;
+            table.appendChild(row3);
+
+            container.appendChild(table);
+        }
+    } catch (err) {
+        console.error("Error al cargar partidos:", err);
+        alert("Error al cargar partidos.");
+    }
+}
+
+
+async function getEquipo(id) {
+    try {
+        const res = await fetch(`/api/Equipo/${id}`);
+        const data = await res.json();
+        return data;
+    } catch (e) {
+        console.error("Error obteniendo equipo:", e);
+        return null;
+    }
+}
+
+window.onload = loadMatches;
+</script>
+{% endblock %}

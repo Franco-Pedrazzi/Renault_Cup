@@ -12,13 +12,6 @@ CREATE TABLE `Equipo` (
   PRIMARY KEY (`id_equipo`)
 );
 
--- ---
--- Table 'jugador'
--- 
--- ---
-
-DROP TABLE IF EXISTS `jugador`;
-		
 CREATE TABLE `jugador` (
   `id_jugador` int AUTO_INCREMENT,
   `id_equipo` int NULL DEFAULT NULL,
@@ -31,13 +24,6 @@ CREATE TABLE `jugador` (
   `Infracciones` VARCHAR(10) NULL DEFAULT '0',
   PRIMARY KEY (`id_jugador`)
 );
-
--- ---
--- Table 'Responsable'
--- 
--- ---
-
-DROP TABLE IF EXISTS `Responsable`;
 		
 CREATE TABLE `Responsable` (
   `id_profesor`int AUTO_INCREMENT,
@@ -51,12 +37,6 @@ CREATE TABLE `Responsable` (
   PRIMARY KEY (`id_profesor`)
 );
 
--- ---
--- Table 'Partido'
--- 
--- ---
-
-DROP TABLE IF EXISTS `Partido`;
 		
 CREATE TABLE `Partido` (
   `id_partido`int AUTO_INCREMENT,
@@ -73,13 +53,6 @@ CREATE TABLE `Partido` (
   PRIMARY KEY (`id_partido`)
 );
 
--- ---
--- Table 'Resultado'
--- 
--- ---
-
-DROP TABLE IF EXISTS `Resultado`;
-		
 CREATE TABLE `Resultado` (
   `id_partido` int AUTO_INCREMENT,
   `Puntaje_e1` int NULL DEFAULT 0,
@@ -90,28 +63,15 @@ CREATE TABLE `Resultado` (
   PRIMARY KEY (`id_partido`)
 );
 
--- ---
--- Table 'Cuenta_habilitada'
--- 
--- ---
-
-DROP TABLE IF EXISTS `Cuenta_habilitada`;
 		
 CREATE TABLE `Cuenta_habilitada` (
-  `id_cuenta` int AUTO_INCREMENT,
-  `Nombre` VARCHAR(40) NULL DEFAULT NULL,
-  `Email` VARCHAR(40) NULL DEFAULT NULL,
-  `Contraseña` VARCHAR(20) NULL DEFAULT NULL,
+  `Nombre` VARCHAR(40) not NULL,
+  `Email` VARCHAR(40) not NULL,
+  `Contraseña` VARCHAR(200) not NULL,
   `rango`  VARCHAR(20) NULL DEFAULT NULL,
-  PRIMARY KEY (`id_cuenta`)
+  PRIMARY KEY (`Email`)
 );
 
--- ---
--- Table 'Staff'
--- 
--- ---
-
-DROP TABLE IF EXISTS `Staff`;
 		
 CREATE TABLE `Staff` (
   `id_staff` int AUTO_INCREMENT,
@@ -124,9 +84,15 @@ CREATE TABLE `Staff` (
   PRIMARY KEY (`id_staff`)
 );
 
--- ---
--- Foreign Keys 
--- ---
+CREATE TABLE `Verificacion` (
+  `id` int not NULL,
+  `Email` VARCHAR(40) not NULL,
+  `codigo` VARCHAR(20) not NULL,
+  `contra_codificada`  VARCHAR(200) not null,
+  `nombre` VARCHAR(40) not NULL,
+  `rango` VARCHAR(20) not NULL,
+  PRIMARY KEY (`id`)
+);
 
 ALTER TABLE `jugador` ADD FOREIGN KEY (id_equipo) REFERENCES `Equipo` (`id_equipo`);
 ALTER TABLE `Responsable` ADD FOREIGN KEY (id_equipo) REFERENCES `Equipo` (`id_equipo`);

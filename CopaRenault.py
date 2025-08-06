@@ -1,44 +1,47 @@
-from flask import Flask, render_template, request, jsonify, flash, redirect,session, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-import firebase_admin
-from firebase_admin import credentials, auth
-import requests
-import pyrebase
-
-firebaseConfig = {
-  'apiKey': "AIzaSyBnLNMylTO8bGoO6X-XXdtJ9dTAKOf3LaI",
-  'authDomain': "renaultcup-4a1d2.firebaseapp.com",
-  'projectId': "renaultcup-4a1d2",
-  'storageBucket': "renaultcup-4a1d2.firebasestorage.app",
-  'messagingSenderId': "1031158605901",
-  'appId': "1:1031158605901:web:2c7f08ec7c34bb33585404",
-  'measurementId': "G-67C71NFEQ5",
-  'databaseURL':"https://renaultcup-4a1d2-default-rtdb.firebaseio.com/"
-}
+from werkzeug.security import generate_password_hash, check_password_hash
+import random
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.header import Header
+from datetime import datetime
 app = Flask(__name__)
-CORS(app,supports_credentials=True)
+CORS(app)
 
-# Inicializar Firebase
-firebase=pyrebase.initialize_app(firebaseConfig)
-auth=firebase.auth()
-
-# Configuración de Flask
+# Configuración de Flask y BD
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost/RenaultCup'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = 'secret'
-app.config['SESSION_COOKIE_SECURE'] = False  # Solo para testing local
-app.config['SESSION_COOKIE_SAMESITE'] = "Lax" 
-# Inicializar extensiones
+
+db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
-db = SQLAlchemy(app)
+GMAIL_USER = "renaultcup0@gmail.com"
+GMAIL_PASS = "ywer mdum zooi zvxm"
 
-# Modelos
+@login_manager.user_loader
+def load_user(email):
+    return Usuario.query.get(email)
 
+class Usuario(UserMixin, db.Model):
+    __tablename__ = 'Cuenta_habilitada'
+    Nombre = db.Column(db.String(100))
+    Email = db.Column(db.String(100), unique=True, primary_key=True)
+    Contraseña = db.Column(db.String(100))
+    rango = db.Column(db.String(20))
+
+    def get_id(self):
+        return self.Email 
+    
+    def is_active(self):
+        return True
+    
 class Jugador(db.Model):
     __tablename__ = 'Jugador'
     id = db.Column(db.Integer, primary_key=True)
@@ -82,121 +85,164 @@ class Staff(db.Model):
     Trabajo = db.Column(db.String(15))
     Sector = db.Column(db.String(20))
 
-class FirebaseUser(UserMixin):
-    def __init__(self, uid, email):
-        self.id = uid
-        self.email = email
+
+class Verificacion(db.Model):
+    __tablename__ = 'Verificacion'
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(40))
+    codigo = db.Column(db.String(20))
+    nombre = db.Column(db.String(40))
+    contra_codificada = db.Column(db.String(200))
+    rango = db.Column(db.String(20))
+
+class Responsable(db.Model):
+    __tablename__ = 'Responsable'
+    
+    id_profesor = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id_equipo = db.Column(db.Integer, db.ForeignKey('Equipo.id_equipo'), nullable=True)
+    Nombre = db.Column(db.String(50), default='-')
+    DNI = db.Column(db.String(10), nullable=True)
+    Telefono = db.Column(db.String(15), nullable=True)
+    Email = db.Column(db.String(40), nullable=True)
+    Comida_especial = db.Column(db.String(3), default='N')
+    Fecha_nacimiento = db.Column(db.Date, nullable=True)
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    try:
-        user_record = auth.get_user(user_id)
-        return FirebaseUser(user_record.uid, user_record.email)
-    except:
-        return None
+@app.context_processor
+def inject_user_rango():
+    if current_user.is_authenticated:
+        return dict(rango=current_user.rango)
+    return dict()
+    
 
-def firebase_login(email, password):
-    api_key = firebaseConfig["apiKey"]
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
-    payload = {
-        "email": email,
-        "password": password,
-        "returnSecureToken": True
-    }
-    res = requests.post(url, json=payload)
-    if res.status_code == 200:
-        return res.json()
-    return None
+
+@app.route("/check_email", methods=["POST"])
+def check_email():
+    data = request.get_json()
+    email = data.get("Email")
+    if not email:
+        return jsonify({"exists": False})
+
+    existe = Usuario.query.filter_by(Email=email).first() is not None or Verificacion.query.filter_by(email=email).first() is not None
+    return jsonify({"exists": existe})
 
 @app.route("/signup", methods=["POST"])
-def signupApi():
-    try:
-        data = request.get_json()
-        nombre = data.get("Nombre")
-        email = data.get("Email")
-        password = data.get("Contraseña")
+def signup():
+    data = request.get_json()
+    nombre = data.get("Nombre")
+    email = data.get("Email")
+    contraseña = data.get("Contraseña")
+    rango = "C"
+    usuario = Usuario.query.filter_by(Email=email).first()
+    if not (nombre and email and contraseña):
+        return jsonify({"success": False, "error": "Faltan datos"}), 400
 
-        if not (nombre and email and password):
-            return jsonify({"success": False, "error": "Faltan campos"}), 400
+    if usuario:
+        if not usuario or not check_password_hash(usuario.Contraseña, contraseña):
+            return jsonify({"success": False, "error": "El email ya está registrado y contraseña incorrecta"}), 401
+        login_user(usuario)
+        return jsonify({"success": False, "error": "El email ya está registrado"}), 400
+    if Verificacion.query.filter_by(email=email).first():
+        return jsonify({"success": False, "error": "El email ya está pendiente de verificacion"}), 400
+    contra_codificada = generate_password_hash(contraseña)
+    codigo = ''.join(random.choices('0123456789', k=6))
 
-        user_record = auth.create_user_with_email_and_password(email, password)
+    verif = Verificacion(email=email, codigo=codigo, nombre=nombre, contra_codificada=contra_codificada, rango=rango)
+    db.session.add(verif)
+    db.session.commit()
 
-        return jsonify({"success": True}), 200
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+    enviado = enviar_email(email, codigo)
+    if not enviado:
+        return jsonify({"success": False, "error": "No se pudo enviar el codigo de verificacion"}), 500
+
+    return jsonify({"success": True, "mensaje": "Código enviado a tu email, verifica para activar tu cuenta."}), 200
+
+@app.route("/verificar_codigo", methods=["POST"])
+def verificar_codigo():
+    data = request.get_json()
+    email = data.get("Email")
+    codigo = data.get("Codigo")
+
+    if not (email and codigo):
+        return jsonify({"success": False, "error": "Faltan datos"}), 400
+
+    verif = Verificacion.query.filter_by(email=email).first()
+    if not verif or verif.codigo != codigo:
+        return jsonify({"success": False, "error": "Código incorrecto"}), 400
 
 
+    usuario_existente = Usuario.query.filter_by(Email=email).first()
+    if usuario_existente:
+        return jsonify({"success": False, "error": "Usuario ya verificado"}), 400
+
+    nuevo_usuario = Usuario(
+        Nombre=verif.nombre,
+        Email=verif.email,
+        Contraseña=verif.contra_codificada,
+        rango=verif.rango
+    )
+    db.session.add(nuevo_usuario)
+    db.session.delete(verif)
+    db.session.commit()
+
+    login_user(nuevo_usuario)
+
+    return jsonify({"success": True, "mensaje": "Cuenta verificada y sesión iniciada"})
 
 @app.route("/login", methods=["POST"])
-def loginApi_Post():
-    try:
-        data = request.get_json()
-        email = data.get("Email")
-        password = data.get("Contraseña")
-
-        if not (email and password):
-            return jsonify({"success": False, "error": "Faltan datos"}), 400
-
-        user_info = firebase_login(email, password)
-        if user_info is None:
-            return jsonify({"success": False, "error": "Credenciales incorrectas"}), 401
-
-        uid = user_info.get("localId")
-        user = FirebaseUser(uid=uid, email=email)
-        login_user(user)
-        flash(current_user.email)
-        return jsonify({"success": True}), 200
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-@app.route("/loginGET", methods=["GET"])
-def loginApi_Get():
-    print(current_user.email)
-    try:
-        if current_user.is_authenticated:
-            result = [{
-                'email': current_user.email
-            }]
-            return jsonify({'success': True, 'user': result})
-        else:
-            return jsonify({'success': False, 'error': 'Usuario no autenticado'}), 401
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-    
-@app.route("/signup")
-def signup():
-    return render_template('signup.html')
-
-@app.route("/login")
 def login():
-    return render_template('login.html')
+    data = request.get_json()
+    email = data.get("Email")
+    contraseña = data.get("Contraseña")
+
+    if not (email and contraseña):
+        return jsonify({"success": False, "error": "Faltan campos"}), 400
+
+    usuario = Usuario.query.filter_by(Email=email).first()
+    if not usuario or not check_password_hash(usuario.Contraseña, contraseña):
+        return jsonify({"success": False, "error": "Contraseña incorrecta"}), 401
+
+    login_user(usuario)
+    return jsonify({"success": True, "usuario": {
+        "Nombre": usuario.Nombre,
+        "Email": usuario.Email
+    }}), 200
+
 @app.route("/logout")
 @login_required
 def logout():
-    current_user.is_authenticated
     logout_user()
-    return redirect(url_for("login"))
+    return redirect(url_for("Index"))
 
 @app.route("/")
 def Index():
     return render_template('Index.html')
 
-@app.route("/Add Player")
+@app.route("/signup", methods=["GET"])
+def signup_page():
+    return render_template('signup and login/signup.html')
+
+@app.route("/login", methods=["GET"])
+def login_page():
+    return render_template('signup and login/login.html')
+@app.route("/Add_Player")
 def Create_Player():
-    return render_template('Add_Player.html')
+    return render_template('Add/Add_Player.html')
 
-@app.route("/Add Equipo")
+@app.route("/Cantina")
+def Cantina():
+    return render_template('Add/Cantina.html')
+@app.route("/Add_Equipo")
 def hell():
-    return render_template('Add_Equipo.html')
+    return render_template('Add/Add_Equipo.html')
 
-@app.route("/Add Match")
+@app.route("/Add_Match")
 def Create_Match():
-    return render_template('Add_Match.html')
+    return render_template('Add/Add_Match.html')
 
-@app.route("/Add Staff")
+@app.route("/Add_Staff")
 def Create_Staff():
-    return render_template('Add_Staff.html')
+    return render_template('Add/Add_Staff.html')
 
 @app.route('/api/Staff', methods=['POST'])
 def add_Staff():
@@ -249,7 +295,6 @@ def add_Equipo():
         Sexo = data.get('Sexo')
         Categoria = data.get('Categoria')
 
-
         if not (Colegio and Deporte and Sexo and Categoria):
             return jsonify({'success': False, 'error': (Colegio , Deporte , Sexo , Categoria)}), 400
 
@@ -262,15 +307,15 @@ def add_Equipo():
 
         db.session.add(new_Equipo)
         db.session.commit()
-  
+
         return jsonify({
             'success': True,
             'Equipo': {
-                'id_equipo': Equipo.id_equipo,
-                'Colegio':Equipo.Colegio,
-                'Deporte':Equipo.Deporte,
-                'Sexo':Equipo.Sexo,
-                'Categoria':Equipo.Categoria
+                'id_equipo': new_Equipo.id_equipo,
+                'Colegio': new_Equipo.Colegio,
+                'Deporte': new_Equipo.Deporte,
+                'Sexo': new_Equipo.Sexo,
+                'Categoria': new_Equipo.Categoria
             }
         })
 
@@ -410,29 +455,146 @@ def add_Matches():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@app.route('/api/Matches', methods=['GET'])
-def get_Matches():
+@app.route('/api/Matches')
+def get_matches():
     try:
-        new_Match = Partido.query.all()
-        result = []
-        for j in new_Match:
-            result.append({
-                'id_partido': Partido.id_partido,
-                'Deporte': Partido.Deporte,
-                'Categoria': Partido.Categoria,
-                'Sexo': Partido.Sexo,
-                'Equipo_1': Partido.Equipo_1,
-                'Equipo_2': Partido.Equipo_2,
-                'Arbitro': Partido.Arbitro,
-                'Planillero': Partido.Planillero,
-                'Horario_inicio': Partido.Horario_inicio,
-                'Horario_final': Partido.Horario_final
+        partidos = Partido.query.all()
+        lista = []
+
+        for partido in partidos:
+
+            lista.append({
+                "Fase": partido.Fase,
+                "Arbitro": partido.Arbitro,
+                "Planillero": partido.Planillero,
+                "Equipo_1": partido.Equipo_1,
+                "Equipo_2": partido.Equipo_2,
             })
-        return jsonify({'success': True, 'Equipo': result})
+
+        return jsonify(success=True, Matches=lista)
+
+    except Exception as e:
+        return jsonify(success=False, error=str(e)), 500
+
+@app.route('/api/responsable', methods=['POST'])
+def agregar_responsable():
+    try:
+        data = request.get_json()
+
+        id_equipo = data.get('id_equipo') 
+        Nombre = data.get('Nombre', '-')
+        DNI = data.get('DNI')
+        Telefono = data.get('Telefono')
+        Email = data.get('Email')
+        Comida_especial = data.get('Comida_especial', 'N')
+        Fecha_nacimiento = data.get('Fecha_nacimiento') 
+
+        fecha_obj = None
+        if Fecha_nacimiento:
+            from datetime import datetime
+            try:
+                fecha_obj = datetime.strptime(Fecha_nacimiento, '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'success': False, 'error': 'Formato de fecha inválido, debe ser YYYY-MM-DD'}), 400
+
+        nuevo_responsable = Responsable(
+            id_equipo=id_equipo,
+            Nombre=Nombre,
+            DNI=DNI,
+            Telefono=Telefono,
+            Email=Email,
+            Comida_especial=Comida_especial,
+            Fecha_nacimiento=fecha_obj
+        )
+
+        db.session.add(nuevo_responsable)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'Responsable': {
+                'id_profesor': nuevo_responsable.id_profesor,
+                'Nombre': nuevo_responsable.Nombre,
+                'DNI': nuevo_responsable.DNI,
+                'Telefono': nuevo_responsable.Telefono,
+                'Email': nuevo_responsable.Email,
+                'Comida_especial': nuevo_responsable.Comida_especial,
+                'Fecha_nacimiento': str(nuevo_responsable.Fecha_nacimiento),
+                'id_equipo': nuevo_responsable.id_equipo
+            }
+        })
+
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/Equipos', methods=['GET'])
+def get_equipos():
+    equipos = Equipo.query.all()
+    return jsonify([
+        {
+            'id': equipo.id_equipo,
+            'colegio': equipo.Colegio,
+            'deporte': equipo.Deporte,
+            'sexo': equipo.Sexo,
+            'categoria': equipo.Categoria
+        }
+        for equipo in equipos
+    ])
+
+@app.route('/api/Equipo/<int:id>', methods=['PUT'])
+def update_equipo(id):
+    equipo = Equipo.query.get(id)
+    if not equipo:
+        return jsonify({'success': False, 'error': 'Equipo no encontrado'}), 404
+    data = request.get_json()
+    try:
+        equipo.Colegio = data['Colegio']
+        equipo.Deporte = data['Deporte']
+        equipo.Sexo = data['Sexo']
+        equipo.Categoria = data['Categoria']
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@app.route('/api/Equipo/<int:id>', methods=['DELETE'])
+def delete_equipo(id):
+    equipo = Equipo.query.get(id)
+    if not equipo:
+        return jsonify({'success': False, 'error': 'Equipo no encontrado'}), 404
+    try:
+        db.session.delete(equipo)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+
+def enviar_email(destino, codigo):
+    asunto = "Código de verificacion RenaultCup"
+    cuerpo = f"Hola,\n\nTu codigo de verificacion es {codigo}"
+
+    mensaje = MIMEMultipart()
+    mensaje['From'] = GMAIL_USER
+    mensaje['To'] = destino
+    mensaje['Subject'] = Header(asunto, 'utf-8')  
+
+    cuerpo_mime = MIMEText(cuerpo, 'plain', 'utf-8')
+    mensaje.attach(cuerpo_mime)
+
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(GMAIL_USER, GMAIL_PASS)
+        
+        texto_email = mensaje.as_string()
+
+        server.sendmail(GMAIL_USER, destino, texto_email)
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Error enviando email: {e}")
+        return False
+
 if __name__ == "__main__":
     app.run(debug=True)
-    
-

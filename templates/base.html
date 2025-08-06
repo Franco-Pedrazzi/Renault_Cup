@@ -11,16 +11,24 @@
   <div
     style="display: flex; justify-content: space-between; background-color: darkgray; padding: 10px; align-items: center;">
     <h1 style="margin: 0;">Copa Renault</h1>
-    <button onclick="fetchData()">Inicio</button>
-    <button onclick="location.href='http://127.0.0.1:5000/Add Equipo'">Añadir Equipo</button>
-    <button onclick="location.href='http://127.0.0.1:5000/Add Player'">Añadir Persona</button>
-    <button onclick="location.href='http://127.0.0.1:5000/Add Match'">Añadir Partido</button>
-    <button onclick="location.href='http://127.0.0.1:5000/Add Staff'">Añadir Empleado</button>
-
+    <button onclick="location.href='http://127.0.0.1:5000/'">Inicio</button>
+    <button onclick="location.href='http://127.0.0.1:5000/Add_Equipo'">Equipos</button>
+    <button onclick="location.href='http://127.0.0.1:5000/Add_Match'">Partidos</button>
+    <button onclick="location.href='http://127.0.0.1:5000/Cantina'">Cantina</button>
+    <button onclick="location.href='http://127.0.0.1:5000/Add_Player'">Añadir Persona</button>
+      {% if current_user.rango=="A" %}
+      <button onclick="location.href='http://127.0.0.1:5000/Add_Staff'">Añadir Empleado</button>
+      </form>
+      {% else %}
+  
+    <div></div>
+    
+    
+      {% endif %}
     <div>
 
       {% if current_user.is_authenticated %}
-      <span>Bienvenido/a, {{ current_user.email }}</span>
+      <span>Bienvenido/a {{ current_user.Nombre }}</span>
       <form action="{{ url_for('logout') }}" method="get" style="display:inline;">
         <button type="submit">Cerrar sesión</button>
       </form>
