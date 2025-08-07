@@ -11,7 +11,7 @@
       {% endif %}
 <button onclick="handle()">inscribirse</button>
 <div id="ShowTeam">
-    <table id="Table"></table>
+
 </div>
 
 <div id="AddTeam" style="display:none;">
@@ -64,7 +64,7 @@ function loadEquipos() {
     fetch('/api/Equipos')
     .then(response => response.json())
     .then(equipos => {
-        const table = document.getElementById("Table");
+        const table = document.createElement("table");
         table.border = 1;
 
         const thead = document.createElement('thead');
@@ -131,7 +131,6 @@ function addDriver() {
     const Sexo = document.getElementById('Sexo').value;
     const Categoria = document.getElementById('Categoria').value;
     const Deporte = document.getElementById('Deporte').value;
-
     const datos = {
         Colegio: Colegio,
         Sexo: Sexo,
@@ -141,8 +140,8 @@ function addDriver() {
 
     let url = '/api/Equipo';
     let metodo = 'POST';
+    let editandoId =null
 
-    // Si estamos editando
     if (editandoId !== null) {
         url = `/api/Equipo/${editandoId}`;
         metodo = 'PUT';
@@ -160,12 +159,12 @@ function addDriver() {
         if (!data.success) {
             alert("Error: " + data.error);
         } else {
-            editandoId = null; // salir del modo edición
+            editandoId = null; 
             document.getElementById('Colegio').value = '';
             document.getElementById('Deporte').value = '';
             document.getElementById('Sexo').value = '';
             document.getElementById('Categoria').value = '';
-            handle(); // Ocultar formulario y mostrar tabla
+            handle(); 
         }
     })
     .catch(err => {

@@ -88,7 +88,7 @@ class Staff(db.Model):
 
 class Verificacion(db.Model):
     __tablename__ = 'Verificacion'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(40))
     codigo = db.Column(db.String(20))
     nombre = db.Column(db.String(40))
