@@ -1,0 +1,155 @@
+
+
+body {
+  font-family: NouvelR\, sans-serif;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color:#222222;
+  color: white;
+  border-color: white;
+}
+
+div {
+	display: grid;
+	place-content: center;
+}
+
+input[type=text],input[type=email],input[type=password] {
+  background-color: #222222;
+	appearance: none;
+	border: none;
+	outline: none;
+	border-bottom: .2em solid #fffc43;
+	background: rgba(#000000, .2);
+	border-radius: .2em .2em 0 0;
+	padding: .4em;
+	color: #fffc43;;
+}
+
+input[type=checkbox] {
+	appearance: none;
+  background-color: #222222;
+  margin: 0;
+	font: inherit;
+  color: currentColor;
+  width: 1.15em;
+  height: 1.15em;
+  border: 0.15em solid #fffc43;
+  border-radius: 0.15em;
+  transform: translateY(-0.075em);
+	display: grid;
+  place-content: center;
+	&::before {
+		content: "";
+		width: 0.65em;
+		height: 0.65em;
+		transform: scale(0);
+		transition: 120ms transform ease-in-out;
+		box-shadow: inset 1em 1em #fffc43;
+		background-color: black;
+		clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+		transform-origin: left top;
+	}
+	&:checked::before {
+		transform: scale(1);
+	}
+}
+
+
+
+input[type=color] { 
+  background-color: #222222;
+	padding: 0;
+	border: none;
+	width: 2em;
+	height: 2em;
+	border-radius: 50%;
+	&::-webkit-color-swatch {
+		border: none;
+		border-radius: 50%;
+	}
+	&::-webkit-color-swatch-wrapper {
+		padding: 0;
+	}
+}
+
+
+button ,input[type=submit]{
+	appearance: none;
+	border: .2em solid #fffc43;
+	background: hsl(0 0 0/0);
+	padding: .85em 1.5em;
+	color: #fffc43;;
+	border-radius: 2em;
+	transition: 1s;
+	&:hover, &:focus, &:active {
+		background: #fffc43;
+		color: #000000;
+	}
+}
+nav button {
+	appearance: none;
+	border: .2em solid #000000;
+	background: hsla(61, 100%, 57%, 0);
+	padding: .85em 1.5em;
+	color: #000000;;
+	border-radius: 2em;
+	transition: 1s;
+	&:hover, &:focus, &:active {
+		background: #000000;
+		color: #fffc43;
+	}
+}
+input[type=file] { display: none; }
+label[for=file] {
+  background-color: #222222;
+	display: grid;
+	grid-auto-flow: column;
+	grid-gap: .5em;
+	justify-items: center;
+	align-content: center;
+	color: #fffc43;;
+	border: .2em solid #fffc43;
+	background: hsl(0 0 0/0);
+	padding: .85em 1.5em;
+	color: #fffc43;;
+	border-radius: 2em;
+	transition: 1s;
+	&:hover, &:focus, &:active {
+		background: #fffc43;
+		color: #000000;
+	}
+}
+
+input[type=date] {
+  background-color: #222222;
+	border: .2em solid #fffc43;
+	padding: .8em .9em;
+	border-radius: 2em;
+	color: #000000;
+	&::-webkit-datetime-edit { padding: 1em; }
+	&::-webkit-datetime-edit-fields-wrapper { background: rgba(#fffc43, .2); }
+	&::-webkit-datetime-edit-text { color: #fffc43; padding: 0 0.3em; }
+	&::-webkit-datetime-edit-month-field { color: #fffc43;; }
+	&::-webkit-datetime-edit-day-field { color: #fffc43;; }
+	&::-webkit-datetime-edit-year-field { color: #fffc43;; }
+	&::-webkit-inner-spin-button { color: #fffc43;; }
+  &::-webkit-calendar-picker-indicator {background-color: #fffc43;}
+}
+
+input[type=number] {
+  background-color: #222222;
+	width: 3em;
+	padding: 0.5em;
+	border: .2em solid #fffc43;
+	border-radius: 1em;
+	text-align: center;
+	color: #fffc43;;
+	appearance: textfield;
+	margin: 0;
+	&::-webkit-inner-spin-button {
+		opacity: 1;
+		background: rgb(126, 101, 101);
+	}
+}

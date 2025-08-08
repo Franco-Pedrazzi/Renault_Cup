@@ -1,18 +1,21 @@
 {% extends "./base.html" %}
 
 {% block body %}
+<div style="align-items: center;">
 <div id="signup-div">
-    <p>Nombre:<input id="Nombre" type="text"></p>
-    <p>Email:<input id="Email" type="text"></p>
-    <p>Contraseña:<input id="Contraseña" type="password"></p>
+    <p>Nombre:<input class="form__field"  id="Nombre" type="text"></p>
+    <p>Email:<input class="form__field"  id="Email" type="text"></p>
+    <p>Contraseña:<input class="form__field" id="Contraseña" type="password"></p>
 
     <button onclick="signup()">Signup</button>
 </div>
 
 <div id="verificacion-div" style="display:none;">
     <p>Ingrese el código enviado a su email:</p>
-    <input id="Codigo" type="text" maxlength="6">
+    <input class="form__field"  id="Codigo" type="text" maxlength="6">
     <button onclick="verificarCodigo()">Verificar Código</button>
+</div>
+
 </div>
 
 <script>

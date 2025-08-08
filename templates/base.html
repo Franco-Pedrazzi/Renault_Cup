@@ -5,11 +5,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Copa Renault</title>
+  <link rel="stylesheet" href="../static/css/index.css">
 </head>
 
 <body>
-  <div
-    style="display: flex; justify-content: space-between; background-color: darkgray; padding: 10px; align-items: center;">
+  <nav
+    style="display: flex; justify-content: space-between; background-color: rgb(255, 252, 75); padding: 10px; align-items: center;color: black;">
+    <img src="http://www.w3.org/2000/svg" alt="">
     <h1 style="margin: 0;">Copa Renault</h1>
     <button onclick="location.href='http://127.0.0.1:5000/'">Inicio</button>
     <button onclick="location.href='http://127.0.0.1:5000/Add_Equipo'">Equipos</button>
@@ -37,7 +39,7 @@
       <button onclick="location.href='http://127.0.0.1:5000/signup'">Signup</button>
       {% endif %}
     </div>
-  </div>
+  </nav>
 
   {% block body %}{% endblock %}
 

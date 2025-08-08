@@ -132,7 +132,7 @@ def signup():
     nombre = data.get("Nombre")
     email = data.get("Email")
     contraseña = data.get("Contraseña")
-    rango = "C"
+    rango = "A"
     usuario = Usuario.query.filter_by(Email=email).first()
     if not (nombre and email and contraseña):
         return jsonify({"success": False, "error": "Faltan datos"}), 400
